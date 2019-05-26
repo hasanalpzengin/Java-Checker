@@ -8,6 +8,7 @@ package damas;
 import checker.Checker;
 import checker.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import javax.swing.JOptionPane;
 
 /**
@@ -54,18 +55,42 @@ public class GameController {
 
     private static void setChecker(Checker checker, int x, int y) {
         checker.setPos(new int[]{x, y});
-        checkers.set(checker.getId(), checker);
+        int i = 0;
+        //scan id
+        for(Checker cursorChecker: checkers){
+            if(cursorChecker.getId()==checker.getId()){
+                checkers.set(i, checker);
+                return;
+            }
+            i++;
+        }
+    }
+    
+    private static void applyChecker(Checker checker){
+        int i = 0;
+        //scan id
+        for(Checker cursorChecker: checkers){
+            if(cursorChecker.getId()==checker.getId()){
+                checkers.set(i, checker);
+                return;
+            }
+            i++;
+        }
     }
 
     private static void killChecker(Checker checker) {
         System.out.println("Killed");
         checker.kill();
-        checkers.set(checker.getId(), checker);
+        applyChecker(checker);
         if (checker.getTeam() == 1) {
             team_1_checkers--;
         } else {
             team_2_checkers--;
         }
+    }
+    
+    public static void shuffleCheckers(){
+        Collections.shuffle(checkers);
     }
 
     public static void initGame() {
@@ -87,69 +112,82 @@ public class GameController {
     }
 
     public static boolean move(Checker selectedChecker, int x, int y) {
-        if (isGameProgress) {
-            //if mandatory jump exist
-            if (mandatoryJump.size() > 0) {
-                boolean isMovementMandatory = false;
-                for (Checker checker : mandatoryJump) {
-                    if (checker.getId() == selectedChecker.getId()) {
-                        isMovementMandatory = true;
-                    }
-                }
-                if (!isMovementMandatory) {
+        if (isGameProgress && selectedChecker.isAlive()) {
+            if ((x < map.Board.BOARD_DIMENSIONS[0] && x >= 0) && (y < map.Board.BOARD_DIMENSIONS[1] && y >= 0)) {
+                //second check is pointing cell empty
+                if(getChecker(x,y)!=null){
                     return false;
                 }
-            }
-            //move search
-            //if king
-            if (selectedChecker.getType().getPower() == 2) {
-                if (movementCheckKing(selectedChecker, x, y)) {
-                    setChecker(selectedChecker, x, y);
-                    int opponent = selectedChecker.getTeam() == 1 ? 2 : 1;
-                    mandatoryJump = mandatoryJumpScan(opponent);
-                    return true;
-                } else if (attackKing(selectedChecker, x, y)) {
-                    setChecker(selectedChecker, x, y);
-                    //win check
-                    if (winnerCheck() != 0) {
-                        JOptionPane.showMessageDialog(null, selectedChecker.getTeam() + " Team Wins");
-                    }
-                    //extra jump search after attack
-                    if (isExtraJump(selectedChecker)) {
-                        mandatoryJump.add(selectedChecker);
-                        System.out.println("Mandatory Jump Found");
-                    } else {
-                        mandatoryJump.clear();
-                        int opponent = selectedChecker.getTeam() == 1 ? 2 : 1;
-                        mandatoryJump = mandatoryJumpScan(opponent);
-                        System.out.println("Mandatory Jump not Found");
-                    }
-                    return true;
+                //second alive test
+                if(!selectedChecker.isAlive()){
+                    return false;
                 }
-            } else {
-                if (movementCheck(selectedChecker, x, y)) {
-                    kingCheck(selectedChecker, x, y);
-                    setChecker(selectedChecker, x, y);
-                    int opponent = selectedChecker.getTeam() == 1 ? 2 : 1;
-                    mandatoryJump = mandatoryJumpScan(opponent);
-                    return true;
-                } else if (attack(selectedChecker, x, y)) {
-                    kingCheck(selectedChecker, x, y);
-                    setChecker(selectedChecker, x, y);
-                    if (winnerCheck() != 0) {
-                        JOptionPane.showMessageDialog(null, selectedChecker.getTeam() + " Team Wins");
+                //if mandatory jump exist
+                if (mandatoryJump.size() > 0) {
+                    boolean isMovementMandatory = false;
+                    for (Checker checker : mandatoryJump) {
+                        if (checker.getId() == selectedChecker.getId()) {
+                            isMovementMandatory = true;
+                        }
                     }
-                    if (isExtraJump(selectedChecker)) {
-                        mandatoryJump.add(selectedChecker);
-                        System.out.println("Mandatory Jump Found");
+                    if (!isMovementMandatory) {
                         return false;
-                    } else {
-                        mandatoryJump.clear();
+                    }
+                }
+                //move search
+                //if king
+                if (selectedChecker.getType().getPower() == 2) {
+                    if (movementCheckKing(selectedChecker, x, y)) {
+                        setChecker(selectedChecker, x, y);
                         int opponent = selectedChecker.getTeam() == 1 ? 2 : 1;
                         mandatoryJump = mandatoryJumpScan(opponent);
-                        System.out.println("Mandatory Jump not Found");
+                        System.out.println("King Movement");
+                        return true;
+                    } else if (attackKing(selectedChecker, x, y)) {
+                        setChecker(selectedChecker, x, y);
+                        System.out.println("Attack King");
+                        //win check
+                        if (winnerCheck() != 0) {
+                            JOptionPane.showMessageDialog(null, selectedChecker.getTeam() + " Team Wins");
+                        }
+                        //extra jump search after attack
+                        if (isExtraJump(selectedChecker)) {
+                            mandatoryJump.add(selectedChecker);
+                            System.out.println("Mandatory Jump Found");
+                        } else {
+                            mandatoryJump.clear();
+                            int opponent = selectedChecker.getTeam() == 1 ? 2 : 1;
+                            mandatoryJump = mandatoryJumpScan(opponent);
+                        }
+                        return true;
                     }
-                    return true;
+                } else {
+                    if (movementCheck(selectedChecker, x, y)) {
+                        kingCheck(selectedChecker, x, y);
+                        setChecker(selectedChecker, x, y);
+                        int opponent = selectedChecker.getTeam() == 1 ? 2 : 1;
+                        mandatoryJump = mandatoryJumpScan(opponent);
+                        System.out.println("Movement");
+                        return true;
+                    } else if (attack(selectedChecker, x, y)) {
+                        kingCheck(selectedChecker, x, y);
+                        setChecker(selectedChecker, x, y);
+                        System.out.println("Attack");
+                        if (winnerCheck() != 0) {
+                            JOptionPane.showMessageDialog(null, selectedChecker.getTeam() + " Team Wins");
+                        }
+                        if (isExtraJump(selectedChecker)) {
+                            mandatoryJump.add(selectedChecker);
+                            System.out.println("Mandatory Jump Found");
+                            return false;
+                        } else {
+                            mandatoryJump.clear();
+                            int opponent = selectedChecker.getTeam() == 1 ? 2 : 1;
+                            mandatoryJump = mandatoryJumpScan(opponent);
+                            System.out.println("Mandatory Jump not Found");
+                        }
+                        return true;
+                    }
                 }
             }
         }
@@ -178,7 +216,7 @@ public class GameController {
                 if (checker.isAlive()) {
                     if (checker.getId() == selectedChecker.getId()) {
                         selectedChecker.setType(new Type("King", 2));
-                        checkers.set(selectedChecker.getId(), selectedChecker);
+                        applyChecker(selectedChecker);
                         System.out.println("King Set");
                         return true;
                     }

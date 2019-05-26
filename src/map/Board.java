@@ -23,7 +23,6 @@ import javax.swing.JPanel;
 public class Board extends JPanel {
 
     private int _tile_size = 5;
-    public static Cell[][] cells;
     public static final int[] BOARD_DIMENSIONS = {8, 8};
     private boolean inDrag = false;
     private Checker lastChecker;
@@ -32,7 +31,6 @@ public class Board extends JPanel {
     public boolean isAgainstComputer = false;
 
     public Board() {
-        cells = new Cell[8][8];
         GameController.initGame();
         this.addMouseListener(new MouseAdapter() {
             @Override
@@ -85,29 +83,32 @@ public class Board extends JPanel {
     
     private void computerRandomPlay(){
         //Mandatory Jump Found
+        GameController.shuffleCheckers();
         if(GameController.mandatoryJumpScan(2).size()>0){
             ArrayList<Checker> checkers = GameController.mandatoryJumpScan(2);
             for(Checker checker : checkers){
-                for(Point pos : Computer.getAttackMovements(new Point(checker.getX(), checker.getY()))){
+                for(Point pos : AI.Computer.getAttackMovements(new Point(checker.getX(), checker.getY()))){
                     System.out.println("Computer Played: "+checker.getX()+"x"+checker.getY()+" to "+pos.x+"x"+pos.y);
                     if (GameController.move(checker, pos.x, pos.y)) {
                         //swap turn
+                        System.out.println("Checker moved to "+pos.x+"x"+pos.y);
                         swapTurn();
-                        refresh();
                         return;
                     }
                 }
             }
         }
-        
-        
+        //mandatory jump not found
         for(Checker checker : damas.GameController.getCheckers()){
-            if(checker.getTeam() == 2){
-                for(Point pos : Computer.getMovements(new Point(checker.getX(), checker.getY()))){
-                    if (GameController.move(lastChecker, pos.x, pos.y)) {
-                        //swap turn
-                        swapTurn();
-                        return;
+            if(checker.getTeam() == 2 && checker.isAlive()){
+                for(Point pos : AI.Computer.getMovements(new Point(checker.getX(), checker.getY()))){
+                    System.out.println("Checker: " + checker.getX()+"x"+checker.getY()+" want to move to: "+ pos.x+"x"+pos.y);
+                    if (GameController.getChecker(pos.x, pos.y) == null) {
+                        if (GameController.move(checker, pos.x, pos.y)) {
+                            //swap turn
+                            swapTurn();
+                            return;
+                        }
                     }
                 }
             }
@@ -126,6 +127,7 @@ public class Board extends JPanel {
     private void refresh() {
         revalidate();
         repaint();
+        System.out.println("Refresh Worked");
     }
 
     public void setTileSize(int _tile_size) {
@@ -142,9 +144,8 @@ public class Board extends JPanel {
         int tile_size = (int) (width > height ? Math.floor(height / 8) : Math.floor(width / 8));
         setTileSize(tile_size);
 
-        updateCells();
         System.out.println("Repainted");
-
+        //draw squares
         for (int i = 0; i < BOARD_DIMENSIONS[0]; i++) {
             for (int j = 0; j < BOARD_DIMENSIONS[1]; j++) {
                 Color color = ((i + j) % 2 == 0) ? Color.YELLOW : Color.ORANGE;
@@ -152,12 +153,13 @@ public class Board extends JPanel {
                 graphics.fillRect(i * _tile_size, j * _tile_size, _tile_size, _tile_size);
                 graphics.setColor(Color.BLACK);
                 graphics.drawRect(i * _tile_size, j * _tile_size, _tile_size, _tile_size);
-                //checker
-                if (cells[i][j] != null) {
-                    Color checkerColor = (cells[i][j].getChecker().getTeam() == 1) ? Color.RED : Color.BLUE;
-                    graphics.setColor(checkerColor);
-                    graphics.fillOval(cells[i][j].getChecker().getX() * _tile_size, cells[i][j].getChecker().getY() * _tile_size, _tile_size, _tile_size);
-                }
+            }
+        }
+        for (Checker checker : GameController.getCheckers()){
+            if(checker.isAlive()){
+                Color checkerColor = (checker.getTeam() == 1) ? Color.RED : Color.BLUE;
+                graphics.setColor(checkerColor);
+                graphics.fillOval(checker.getX() * _tile_size, checker.getY() * _tile_size, _tile_size, _tile_size);
             }
         }
     }
@@ -166,15 +168,6 @@ public class Board extends JPanel {
         teamTurn = 1;
         GameGUI.teamText.setText((teamTurn == 1) ? "Team 1" : "Team 2");
         GameGUI.teamText.setForeground((teamTurn == 1) ? Color.RED : Color.BLUE);
-    }
-
-    private void updateCells() {
-        cells = new Cell[8][8];
-        for (Checker checker : damas.GameController.getCheckers()) {
-            if (checker.isAlive()) {
-                cells[checker.getX()][checker.getY()] = new Cell(checker);
-            }
-        }
     }
     
     

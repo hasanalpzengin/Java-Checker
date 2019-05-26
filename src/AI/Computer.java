@@ -3,7 +3,9 @@ package AI;
 import checker.Checker;
 import java.awt.List;
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 
 /*
@@ -18,34 +20,28 @@ import java.util.Iterator;
  */
 public class Computer {
     
-    public static Iterable<Point> getMovements(Point position){
-        Point[] movements = new Point[4];
-        movements[0] = new Point(position.x+1,position.y+1);
-        movements[1] = new Point(position.x-1,position.y+1);
-        movements[2] = new Point(position.x+1,position.y-1);
-        movements[3] = new Point(position.x-1,position.y-1);
+    public static ArrayList<Point> getMovements(Point position){
+        ArrayList<Point> points = new ArrayList<>();
+        points.add(new Point(position.x+1,position.y+1));
+        points.add(new Point(position.x-1,position.y+1));
+        points.add(new Point(position.x+1,position.y-1));
+        points.add(new Point(position.x-1,position.y-1));
         
-        Iterable<Point> iterable = () -> prepareIterator(movements);
-        return iterable;
+        Collections.shuffle(points);
+        
+        return points;
     }
     
-    private static Iterator<Point> prepareIterator(Point[] movements){
-        Iterator<Point> it = Arrays.stream(movements)
-            .filter(ax -> ax != null)
-            .iterator();
+    public static ArrayList<Point> getAttackMovements(Point position) {
+        ArrayList<Point> points = new ArrayList<>();
+        points.add(new Point(position.x+2,position.y+2));
+        points.add(new Point(position.x-2,position.y+2));
+        points.add(new Point(position.x+2,position.y-2));
+        points.add(new Point(position.x-2,position.y-2));
         
-        return it;
-    }
-
-    public static Iterable<Point> getAttackMovements(Point position) {
-        Point[] movements = new Point[4];
-        movements[0] = new Point(position.x+2,position.y+2);
-        movements[1] = new Point(position.x-2,position.y+2);
-        movements[2] = new Point(position.x+2,position.y-2);
-        movements[3] = new Point(position.x-2,position.y-2);
+        Collections.shuffle(points);
         
-        Iterable<Point> iterable = () -> prepareIterator(movements);
-        return iterable;
+        return points;
     }
     
 }
